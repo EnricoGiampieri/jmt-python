@@ -1,4 +1,4 @@
-# JSONtable - representing relational databases in plain text
+# JSON Multi-Table data format - representing relational databases in plain text
 
 
 | semantic version | updated    | authors          |
@@ -8,7 +8,6 @@
 
 The goal is to introduce a detailed data format built on top of the excellent
 [Jsonlines](https://jsonlines.org/) and [ndjson](https://github.com/ndjson/ndjson-spec).
-
 
 this format is designed to replace traditional spreadsheets and
 folders of csv with non trivial relationships among them.
@@ -41,16 +40,16 @@ Advantages over a database
 * cross-platform, and easy to implement reader means that can be read and operated basically anywhere
 * ease of implementation means no lock-in to any specific software
 
-JSONtables can be easily imported and exported to plain database structure.
+JMT can be easily imported and exported to plain database structure.
 It could potentially hold all the information present in a database such as indexes, views and so one by leveraging a metadata table,
 albeit this behavior is not standardized.
 
 ## Relationship with spreadsheets
-A good analogy for JSONtables is to view it as a text-based spreadsheet data format.
+A good analogy for JMT is to view it as a text-based spreadsheet data format.
 Being text based guarantess that there will be no vendor lock-in, and the metadata availability
 
 ## Relationship with HDF5
-JSONtables does not directly support random data access or binary compression, so it can't be used as a compressed and fast data access sudh as hdf5.
+JMT does not directly support random data access or binary compression, so it can't be used as a compressed and fast data access sudh as hdf5.
 On the other end, being text based reduce the chance of catastrophic data corruption on edit and program locking to the single implementation of the parser.
 
 To store binary data and be able to perform random access, it is not trivial, as
@@ -76,7 +75,7 @@ The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL NOT", "SHOULD",
 "SHOULD NOT", "RECOMMENDED", "MAY", and "OPTIONAL" in this document are to 
 be interpreted as described in RFC 2119. \[[RFC2119]\]
 
-## 2. Example JSONTable
+## 2. Example JMT
 
     {"columns": ["name", "age"], "name": "people"}
     ["Albert", 21]
@@ -100,6 +99,8 @@ All serialized data MUST use the UTF8 encoding.
 * Each JSON MUST be either:
     - an object
     - an array
+    - a string
+* the strings-only JSON lines MUST be ignored and can be treated as comments
 * The serialized data MUST start with one object
 * Every object MUST be followed by one or more arrays
     - all these arrays MUST have the same number of elements
@@ -109,7 +110,11 @@ All serialized data MUST use the UTF8 encoding.
     - the values of the associated array MUST be all strings
 * Every object MUST contains one name representing the concept of *name of table* with an string as value
     - the RECOMMENDED name is "name", and is RECOMMENDED to be unique in the file
-
+* it is RECOMMENDED that every object contains one name "types"
+    - the value associated SHOULD be an object, with the column names as values
+    - the values associated to each name are representative of the data type of the column
+    - it is RECOMMENDED that the data types are expressed in string with the standard JSON definition of types
+ 
 ### 3.2 Parsing
 
 The parser MUST accept newline as line delimiter `\n` (0x0A) as well as 
@@ -122,7 +127,7 @@ This behavior MUST be documented and SHOULD be configurable by the user of the p
 ### 3.3 MediaType and File Extensions
 
 The MediaType \[[RFC4288]\] for Newline Delimited JSON 
-SHOULD be _application/x-jtbl_.
+SHOULD be _application/x-jmt_.
 
 When saved to a file, the file extension SHOULD be _.ndjson_.
 
@@ -195,7 +200,7 @@ It is free to use for any purposes commercial or non-commercial.
 
 ### 5.1 Authors
 
-The following authors are responsible for the NDJSON core-specification:
+The following authors are responsible for the JSON Multi-Table core-specification:
 
 * Enrico Giampieri
 
@@ -211,25 +216,3 @@ The following authors are responsible for the NDJSON core-specification:
 
 [RFC4288]: http://www.ietf.org/rfc/rfc4288.txt "RFC 4288 - Media Type Specifications and Registration Procedures"
 \[RFC4288\]: RFC 4288 - Media Type Specifications and Registration Procedures
-
-# TODO
-## data format
-
-* [ ]
-    * [X] export to Excel file
-    * [ ] import from an Excel file
-
-* [X] export to SQLlite file
-* [ ] import from an SQLlite file
-
-
-
-* [ ] export to HDF5 file
-* [ ] import from an HDF5 file
-
-* [X] export to plain JSONlines file
-* [X] import from an plain JSONlines file
-
-## data structures
-* [ ] numpy array storage and retrieval
-* [ ] binary data index build at the end of the file
