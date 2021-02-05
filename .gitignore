@@ -2,3 +2,4 @@
 *.jsonl
 .nvimlog
 *.jtm
+__pycache__
