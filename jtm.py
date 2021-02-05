@@ -8,6 +8,7 @@ Created on Sun Jan 17 22:35:38 2021
 
 # %% do imports
 import os
+import re
 import contextlib
 from sqlite3 import connect, Row
 from contextlib import closing
@@ -316,6 +317,64 @@ def main_jtm2sqlite(args):
     db = read_from_jsontable(source)
     write_into_sqlite(db, dest)
     
+def main_filter(args):
+    regex = args.regex
+    regex = re.compile(regex)
+    source = args.source_filename
+    dest = args.destination_filename
+    db = read_from_jsontable(source)
+    db2 = DataBase({
+        name: table 
+        for (name, table) in db.tables.items() 
+        if regex.match(name)
+        })
+    write_into_jsontable(db2, dest)
+
+def main_jtm2jsonl(args):
+    """ jtm jtm2jsonl example.jtm
+    creates:
+    * ages.jsonl
+    * wealths.jsonl
+    containing a series of object
+    """
+    source = args.source
+    db = read_from_jsontable(source)
+    for name, table in db.tables.items():
+        source_trim = ".".join(source.split('.')[:-1])
+        destination = name+".jsonl"
+        columns = table.columns
+        with open(destination, "w", encoding="utf8") as outfile:
+            for line in table.data:
+                line_obj = dict(zip(columns, line))
+                print(json.dumps(line_obj), file=outfile)
+
+def main_jsonl2jtm(args):
+    """ jtm jsonl2jtm example_rebuilt.jtm *.jsonl
+    rebuilds the example file that was split by jtm2jsonl
+    """
+    sources = args.sources
+    dest = args.destination
+    tables = {}
+    for source in sources:
+        with open(source, "r") as infile:
+            lines = [json.loads(line.strip()) for line in infile]
+            keys = [list(line.keys()) for line in lines]
+            first_base = keys[0]
+            first = set(first_base)
+            same_keys = all(set(other)==first for other in keys[1:])
+            assert same_keys
+            source_trim =  ".".join(source.split('.')[:-1])
+            header = {"columns": list(first_base), "name": source_trim}
+            data = [[d[k] for k in first_base] for d in lines]
+            table = Table(
+                    info=header,
+                    data=data,
+                    )
+            tables[source_trim] = table
+    db = DataBase(tables)
+    write_into_jsontable(db, dest)
+
+
 # %%
 if __name__ == '__main__':
     import argparse, sys
@@ -419,6 +478,55 @@ if __name__ == '__main__':
             type=str,
             )
 
+    subparser = parser_subparsers.add_parser(
+        'filter',
+        help="select a subset of tables from a jtm file",
+        )
+    if "indentation for sub command":
+        subparser.add_argument(
+            "regex",
+            help="regex that matches the name of the tables to keep",
+            type=str,
+            )
+        subparser.add_argument(
+            "source_filename",
+            help="",
+            type=str,
+            )
+        subparser.add_argument(
+            "destination_filename",
+            help="",
+            type=str,
+            )
+
+    subparser = parser_subparsers.add_parser(
+        'jtm2jsonl',
+        help="export a single jtm to a set of jsonlines",
+        )
+    if "indentation for sub command":
+        subparser.add_argument(
+            "source",
+            help="source jtm file",
+            type=str,
+            )
+
+    subparser = parser_subparsers.add_parser(
+        'jsonl2jtm',
+        help="export jsonl files to a jtm containing a single table",
+        )
+    if "indentation for sub command":
+        subparser.add_argument(
+            "destination",
+            help="",
+            type=str,
+            )
+        subparser.add_argument(
+            "sources",
+            help="source jsonl files",
+            type=str,
+            nargs='+',
+            )
+
     # start the actual parsing and defer
     args = parser.parse_args()  
     if args.command == "query":
@@ -433,6 +541,12 @@ if __name__ == '__main__':
         main_sqlite2jtm(args)
     elif args.command == "jtm2sqlite":
         main_jtm2sqlite(args)
+    elif args.command == "filter":
+        main_filter(args)
+    elif args.command == "jtm2jsonl":
+        main_jtm2jsonl(args)
+    elif args.command == "jsonl2jtm":
+        main_jsonl2jtm(args)
     elif args.command is None:
         parser.parse_args(["--help"])
         sys.exit(0)
@@ -442,3 +556,15 @@ if __name__ == '__main__':
     
     
 # ./jtm.py query test.jtbl "SELECT * from ages INNER JOIN wealths ON ages.name==wealths.name" | vd -f json
+
+# TODO: make the filter function a streaming one
+# TODO: make filter accept stdin and stdout
+# TODO: make filter able to filter in or filter out based on a switch
+# TODO: accept from stdin for the jtm2xlsx and jtm2sqlite
+# TODO: able to output to stdout for xlsx2jtm and sqlite2jtm
+
+# TODO: add a function to calculate the index as an external jtm file
+# TODO: add random access to a table if an index is provided
+
+# TODO: read and write from CSV/TSV
+# TODO: read and write from HDF5
