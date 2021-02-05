@@ -568,3 +568,4 @@ if __name__ == '__main__':
 
 # TODO: read and write from CSV/TSV
 # TODO: read and write from HDF5
+# TODO: read and write numpy style arrays... decide for a precise definition
