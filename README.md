@@ -3,7 +3,7 @@
 
 | semantic version | updated    | authors          |
 |------------------|------------|------------------|
-| 1.0.0            | 2021-01-14 | Enrico Giampieri |
+| 1.1.0            | 2021-01-14 | Enrico Giampieri |
 
 
 The goal is to introduce a detailed data format built on top of the excellent
@@ -114,15 +114,18 @@ All serialized data MUST use the UTF8 encoding.
     - the value associated SHOULD be an object, with the column names as values
     - the values associated to each name are representative of the data type of the column
     - it is RECOMMENDED that the data types are expressed in string with the standard JSON definition of types
- 
+* it is RECOMMENDED to use whitespaces to indent the arrays, to provide visual clarity to the structures
+* it is RECOMMENDED to use an empty line to visually separate the tables to provide visual clarity
+
 ### 3.2 Parsing
 
 The parser MUST accept newline as line delimiter `\n` (0x0A) as well as 
 carriage return and newline `\r\n` (0x0D0A). 
 
+Whitelines in the line, before or after the JSON structure, should be ignored.
+
 If the JSON text is not parsable, the parser SHOULD raise an error.
-The parser MAY silently ignore empty lines, e.g. `\n\n`.
-This behavior MUST be documented and SHOULD be configurable by the user of the parser.
+The parser MUST ignore empty lines, e.g. `\n\n`.
 
 ### 3.3 MediaType and File Extensions
 
