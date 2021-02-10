@@ -3,3 +3,4 @@
 .nvimlog
 *.jtm
 __pycache__
+tags
