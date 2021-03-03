@@ -5,6 +5,7 @@
 |------------------|------------|------------------|
 | 1.1.0            | 2021-01-14 | Enrico Giampieri |
 
+## What is JSON Multi-Table (*.jmt)
 
 The goal is to introduce a detailed data format built on top of the excellent
 [Jsonlines](https://jsonlines.org/) and [ndjson](https://github.com/ndjson/ndjson-spec).
@@ -17,7 +18,7 @@ strict formatting and therefore easy parsing.
 
 it places itself somewhere in between a csv, a spreadsheet and a database.
 
-## Better than CSV
+### Better than CSV
 Advantages over CSV:
 * single, well specified format
 * can hold multiple tables in a single file
@@ -32,7 +33,7 @@ Due to the limitations of the format, the homogeinety of the data, there is no
 simple way to distinguish these first line from the data, and this is what limit
 the possibility to use the csv for multi-table saving.
 
-## Simpler than a database
+### Simpler than a database
 Advantages over a database
 * simple and plain data format (text), that allow long term safety
 * being text can be easily kept under version control and diffed
@@ -44,11 +45,11 @@ JMT can be easily imported and exported to plain database structure.
 It could potentially hold all the information present in a database such as indexes, views and so one by leveraging a metadata table,
 albeit this behavior is not standardized.
 
-## Relationship with spreadsheets
+### Relationship with spreadsheets
 A good analogy for JMT is to view it as a text-based spreadsheet data format.
 Being text based guarantess that there will be no vendor lock-in, and the metadata availability
 
-## Relationship with HDF5
+### Relationship with HDF5
 JMT does not directly support random data access or binary compression, so it can't be used as a compressed and fast data access sudh as hdf5.
 On the other end, being text based reduce the chance of catastrophic data corruption on edit and program locking to the single implementation of the parser.
 
@@ -62,9 +63,11 @@ There are two possible solutions:
 I would recommend the second option, as the first one can be very unstable
 while processing the data.
 
-## 1. Introduction
+## Formal specifications
 
-### 1.1 About
+### 1. Introduction
+
+#### 1.1 About
 The proposal aim to define a way to exploit the ndjson/jsonlines format
 to represents multiple tabular databasets in a single text file 
 in a human readable format.
@@ -75,7 +78,7 @@ The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL NOT", "SHOULD",
 "SHOULD NOT", "RECOMMENDED", "MAY", and "OPTIONAL" in this document are to 
 be interpreted as described in RFC 2119. \[[RFC2119]\]
 
-## 2. Example JMT
+### 2. Example JMT
 
     {"columns": ["name", "age"], "name": "people"}
     ["Albert", 21]
@@ -85,9 +88,9 @@ be interpreted as described in RFC 2119. \[[RFC2119]\]
     ["Albert", "cat", "purr"]
     ["Barbara", "dog", "woof"]
 
-## 3. Functional Specification
+### 3. Functional Specification
 
-### 3.1 Serialization
+#### 3.1 Serialization
 
 Each JSON text MUST conform to the \[[RFC7159]\] standard and MUST be written 
 to the stream followed by the newline character `\n` (0x0A).
@@ -114,10 +117,11 @@ All serialized data MUST use the UTF8 encoding.
     - the value associated SHOULD be an object, with the column names as values
     - the values associated to each name are representative of the data type of the column
     - it is RECOMMENDED that the data types are expressed in string with the standard JSON definition of types
+    - this name/value pair CAN be replaced by a table defining the type and possible values of the various columns of all the tables.
 * it is RECOMMENDED to use whitespaces to indent the arrays, to provide visual clarity to the structures
 * it is RECOMMENDED to use an empty line to visually separate the tables to provide visual clarity
 
-### 3.2 Parsing
+#### 3.2 Parsing
 
 The parser MUST accept newline as line delimiter `\n` (0x0A) as well as 
 carriage return and newline `\r\n` (0x0D0A). 
@@ -127,14 +131,14 @@ Whitelines in the line, before or after the JSON structure, should be ignored.
 If the JSON text is not parsable, the parser SHOULD raise an error.
 The parser MUST ignore empty lines, e.g. `\n\n`.
 
-### 3.3 MediaType and File Extensions
+#### 3.3 MediaType and File Extensions
 
 The MediaType \[[RFC4288]\] for Newline Delimited JSON 
 SHOULD be _application/x-jmt_.
 
 When saved to a file, the file extension SHOULD be _.ndjson_.
 
-## 4. Example of Parsing
+### 4. Example of Parsing
 
 A simple parser in python can be implemented in few lines of code:
 
@@ -196,20 +200,20 @@ that returns:
          'info': {'columns': ['a', 'b'], 'name': 'foo'}}}
 ```
 
-## 5. Copyright
+### 5. Copyright
 
 This specification is copyrighted by the authors named in section 4.1. 
 It is free to use for any purposes commercial or non-commercial.
 
-### 5.1 Authors
+#### 5.1 Authors
 
 The following authors are responsible for the JSON Multi-Table core-specification:
 
 * Enrico Giampieri
 
-## A. References
+### 6. References
 
-### A.1 Normative
+#### 6.1 Normative
 
 [RFC2119]: http://www.ietf.org/rfc/rfc2119.txt "RFC 2119 - Key words for use in RFCs to Indicate Requirement Levels"
 \[RFC2119\]: RFC 2119 - Key words for use in RFCs to Indicate Requirement Levels
@@ -219,3 +223,78 @@ The following authors are responsible for the JSON Multi-Table core-specificatio
 
 [RFC4288]: http://www.ietf.org/rfc/rfc4288.txt "RFC 4288 - Media Type Specifications and Registration Procedures"
 \[RFC4288\]: RFC 4288 - Media Type Specifications and Registration Procedures
+
+## Examples of use
+
+Here we'll show some simple example of use (and abuse) of this format for data storage.
+As the goal of this format is to have a human friendly, long term storage, this examples will focus on metadata storage.
+
+### Metadata collection
+
+```json
+"this is the main table of transactions"
+{"name": "transactions", "columns": ["client_ID", "date", "value"]}
+    [234, "2021-02-01", 0.99]
+    [523, "2021-02-10", 15.99]
+    [234, "2021-02-11", 1.50]
+
+"the following table is metadata about the clients"
+{"name": "client_info", "columns": ["client_ID", "proper_name"]}
+    [234, "Graham"]
+    [523, "Dorothy"]
+```
+
+### Data Dictionary
+
+
+```json
+"this is the data dictionry"
+{"name": "data_dictionary", "column": ["table_name", "column_name", "data_type"]}
+    ["transactions", "client_ID", "number"]
+    ["transactions", "date", "string"]
+    ["transactions", "value", "number"]
+    ["client_info", "client_ID", "number"]
+    ["client_info", "proper_name", "string"]
+
+"this is the main table of transactions"
+{"name": "transactions", "columns": ["client_ID", "date", "value"]}
+    [234, "2021-02-01", 0.99]
+    [523, "2021-02-10", 15.99]
+    [234, "2021-02-11", 1.50]
+
+"the following table is metadata about the clients"
+{"name": "client_info", "columns": ["client_ID", "proper_name"]}
+    [234, "Graham"]
+    [523, "Dorothy"]
+```
+### Edit history
+
+
+```json
+"...data omitted..."
+
+"the following table is metadata about the clients"
+{"name": "client_info", "columns": ["client_ID", "proper_name"]}
+    [234, "Graham"]
+    [523, "Dorothy"]
+    
+"corrections on the various tables with an EAV approach"
+{"name": "edit_history", "columns": ["table_name", "tuple_key", "column_name", "new_value", "reason"]}
+    ["client_info", {"client_ID": 523}, "proper_name", "Dorothea", "the first time it was written incorrectly"]
+```
+
+### Configuration files
+One can use the table name, being a string, to represents generale, nested structures.
+This can be helped by the white space insensitivity, that can be used to make the relationship between tables more clear.
+Basically one can simulate and INI/TOML file.
+
+```json
+{"name": "simulation", "columns": ["parameter_name", "parameter_value"]}
+    ["N_particles", 10000]
+    ["delta_t", 0.001]
+    
+    {"name": "simulation/electron", "columns": ["parameter_name", "parameter_value"]}
+        ["mass", 1]
+        ["charge", 1]
+
+```
