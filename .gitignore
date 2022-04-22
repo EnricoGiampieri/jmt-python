@@ -2,5 +2,7 @@
 *.jsonl
 .nvimlog
 *.jtm
+*.jmt
+*.txt
 __pycache__
 tags
